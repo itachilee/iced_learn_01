@@ -1,75 +1,63 @@
 use bevy::prelude::*;
+use bevy::window::PrimaryWindow;
 
+fn main(){
+ App::new()
+ .add_plugins(DefaultPlugins)
+ .add_systems(Startup, spawn_player)
+ .add_systems(Startup, spawn_camera)
+
+ 
+ .run();
+}
 
 #[derive(Component)]
-struct Person;
+pub struct Player{}
 
 
-#[derive(Component)]
-struct Name(String);
-fn main() {
-    App::new()
-    .add_plugins((DefaultPlugins,HelloPlugin))
-    // .add_plugins(DefaultPlugins)
+pub fn spawn_player(
+    mut commands: Commands,
+    window_query: Query<&Window,With<PrimaryWindow>>,
+    asset_server: ResMut<AssetServer>,
+){
+    let window =window_query.get_single().unwrap();
 
-        .run();
+    let texture = asset_server.load("sprites/tile_0084.png");
+    commands.spawn((
+        SpriteBundle{
+            transform: Transform::from_xyz(window.width() /2. , window.height() /2., 0.),
+            texture: texture,
+            ..default()
+        },
+        Player{}
+    ));
 }
 
 
-fn setup(mut commands: Commands, asset_server: Res<AssetServer>){
-    commands.spawn(Camera2dBundle::default());
 
+pub fn spawn_camera(
+    mut commands: Commands,
+    window_query: Query<&Window,With<PrimaryWindow>>
+){
+    let window = window_query.get_single().unwrap();
 
-
-    let texture = asset_server.load("character.png");
-    commands.spawn(SpriteBundle{
-        sprite: Sprite { custom_size: Some(Vec2::new(100.0, 100.0)),
-        ..default() 
-      },
-      texture,
-        ..default()
-    
+    commands.spawn(Camera2dBundle{
+        transform: Transform::from_xyz(window.width() /2. , window.height() /2., 0.),
+         ..default()
     });
 }
 
 
-fn add_people(mut commands: Commands) {
-
-    println!("adding person...");
-
-    commands.spawn((Person, Name("Elaina Proctor".to_string())));
-    commands.spawn((Person, Name("Renzo Hume".to_string())));
-    commands.spawn((Person, Name("Zayna Nieves".to_string())));
-}
-
+pub fn player_movement(
+    keyboard_input: Res<Input<KeyCode>>,
+    mut player_query: Query<&mut Transform,With<Player>>,
+    time: Res<Time>
+){
+    if let Ok(mut transform) =player_query.get_single_mut(){
+        let mut direction = Vec3::ZERO;
 
 
-#[derive(Resource)]
-struct GreetTimer(Timer);
-
-
-fn greet_people(time: Res<Time>,mut timer: ResMut<GreetTimer>, query: Query<&Name, With<Person>>) {
-
-    if timer.0.tick(time.delta()).just_finished(){
-        for name in &query {
-            println!("hello {}!", name.0);
-        }
     }
-   
-}
 
 
-pub struct HelloPlugin;
-
-impl Plugin for HelloPlugin {
-    fn build(&self, app: &mut App) {
-        // add things to your app here
-        app 
-        .insert_resource(GreetTimer(Timer::from_seconds(2.0, TimerMode::Repeating)))
-       
-        .add_systems(Startup,add_people)
-        .add_systems(Startup,setup)
-        //   . add_startup_system(add_people)
-            .add_systems(Update,greet_people);
-    }
 }
